@@ -1,6 +1,6 @@
 # README.md - Apache vs Nginx
 
-Dockers to compare speed apache mod_php7.1 with nginx and php-fpm7.1
+Dockers to compare speed apache mod_php7.1 with nginx and php7.1-fpm
 
 I was using wrk2, from:
 
