@@ -1,0 +1,80 @@
+version: '3'
+
+#env_file:
+#  - ./.env
+
+# https://hub.docker.com/_/solr/
+# https://sematext.com/blog/docker-solr/
+# https://sematext.com/blog/docker-solr-monitoring/
+# https://github.com/docker/compose/issues/3472
+# https://github.com/docker/compose/issues/2957
+
+services:
+  apache-php:
+    build: services/apache-php/build/php${COMPOSE_APACHE_PHP_VER}
+    image: php:${COMPOSE_APACHE_PHP_VER}
+    container_name: test_apache_php
+    #depends_on:
+    #  - mariadb
+    volumes:
+      - './services/apache-php/etc/apache2/sites-enabled/site.conf:/etc/apache2/sites-enabled/site.conf:ro'
+      - ./${APP_PATH}:${DOCKER_APP_PATH}
+    tty: true
+    ports:
+      - ${HOST_APACHE_PORT}:80
+    environment:
+      - VIRTUAL_HOST=${HOST_APP_DOMAIN}
+      - VIRTUAL_PORT=80
+      - TERM=xterm
+    networks:
+      - frontend
+
+  php:
+    build: services/php/build/php${COMPOSE_PHP_VER}
+    image: php:${COMPOSE_PHP_VER}
+    container_name: test_php
+    #depends_on:
+    #  - app
+    #mem_limit: 2HOST_PHPMYADMIN_PORTg
+    #memswap_limit: 0
+    tty: true
+    #stdin_open: false
+    #ports:
+    #  - ${HOST_NGINX_PHP_PORT}:80
+    volumes:
+      - ./volumes/var/run/php-fpm/:/var/run/php-fpm/
+      - ${APP_PATH}:${DOCKER_APP_PATH}
+      - ./services/php/usr/local/etc/php-fpm.d/zzz-www.conf:/usr/local/etc/php-fpm.d/zzz-www.conf
+    environment:
+      #- VIRTUAL_HOST=${HOST_APP_DOMAIN}
+      #- VIRTUAL_PORT=80
+      - MAX_BODY_SIZE=20
+      - TIMEOUT=190
+      - TERM=xterm
+    networks:
+      - backend
+  nginx:
+    build: services/nginx/build/nginx${COMPOSE_NGINX_VER}
+    image: nginx:${COMPOSE_NGINX_VER}
+    container_name: test_nginx
+    ports:
+      - ${HOST_NGINX_PORT}:80
+    depends_on:
+      - php
+    volumes:
+      - ./volumes/var/run/php-fpm/:/var/run/php-fpm/
+      - ${APP_PATH}:${DOCKER_APP_PATH}
+      - './services/nginx/etc/nginx/sites-enabled/site.conf:/etc/nginx/conf.d/site.conf:ro'
+    environment:
+      - MAX_BODY_SIZE=20
+      - FASTCGI_PASS=php:9000
+      - TIMEOUT=190
+      - TERM=xterm
+    networks:
+      - frontend2
+      - backend
+
+networks:
+  frontend:
+  frontend2:
+  backend:
